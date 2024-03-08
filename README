@@ -1,0 +1,7 @@
+Here is just a fun project to explore AI.
+
+Encoder - encode the word into small vector (usually embedded used) pack_size - len of this vector
+Brain - check some context (bucket of vectors) - context_size, produce vector (pack)
+Decoder - decode final vector into word
+
+data - harry.txt is just all "harry potter" text but we can't upload this to GitHub so use your own texts
