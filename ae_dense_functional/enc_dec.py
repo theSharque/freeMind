@@ -7,29 +7,42 @@ from context_brain import ContextBrain
 class EncDec:
     def __init__(self, tr_en=True, tr_de=True, tr_br=True, plot=True):
         self.WORD_SIZE = 24
-        self.ENC_DEC_SIZE = 128
-        self.PACK_SIZE = 1024
-        self.CONTEXT_SIZE = 8
+        self.ENC_SIZE = 512
+        self.DEC_SIZE = 512
+        self.PACK_SIZE = 512
+        self.CONTEXT_SIZE = 6
         self.plot = plot
 
-        self.en: Encoder = Encoder(self.WORD_SIZE, self.PACK_SIZE, self.ENC_DEC_SIZE, tr_en, plot)
-        self.de: Decoder = Decoder(self.WORD_SIZE, self.PACK_SIZE, self.ENC_DEC_SIZE, tr_de, plot)
-        self.br = ContextBrain(self.CONTEXT_SIZE, self.PACK_SIZE, tr_br, plot)
-
-        self.text2text = tf.keras.models.Model(self.en.input_head,
-                                               self.de.body_tail(self.en.head_body(self.en.input_head)))
+        self.en: Encoder = Encoder(self.WORD_SIZE, self.PACK_SIZE, self.ENC_SIZE, tr_en, plot)
+        self.de: Decoder = Decoder(self.WORD_SIZE, self.DEC_SIZE, self.DEC_SIZE, tr_de, plot)
+        self.br = ContextBrain(self.CONTEXT_SIZE, self.PACK_SIZE, self.DEC_SIZE, tr_br, plot)
 
         self.noise = self.get_noise(self.de.input_body, name='noise')
 
+        self.context_word_input = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE,), dtype='string')
+        self.text_brain_text = tf.keras.models.Model(self.context_word_input, self.de.body_tail(
+            self.br.body(self.get_string_brain_encoder(self.context_word_input))), name='text_brain_text')
+
+        if plot:
+            tf.keras.utils.plot_model(self.text_brain_text,
+                                      to_file='img/img_text_brain_text-model.png',
+                                      show_layer_activations=True,
+                                      expand_nested=True,
+                                      show_shapes=True,
+                                      show_dtype=True,
+                                      show_trainable=True,
+                                      show_layer_names=True)
+
         self.context_input = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE, self.WORD_SIZE,), dtype='int32')
 
-        self.input_big_body = tf.keras.layers.Input(shape=(self.PACK_SIZE * self.CONTEXT_SIZE,), dtype='float32')
+        self.input_big_body = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE, self.PACK_SIZE,), dtype='float32')
         self.big_noise = self.get_noise(self.input_big_body, name='big_noise')
 
         self.ints_brain_ints = tf.keras.models.Model(self.context_input, self.de.body(
-            self.noise(self.br.body(self.big_noise(self.get_brain_encoder(self.context_input))))))
+            self.noise(self.br.body(self.big_noise(self.get_int_brain_encoder(self.context_input))))),
+                                                     name='ints_brain_ints')
 
-        self.ints_brain_ints.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
+        self.ints_brain_ints.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001, epsilon=1e-9),
                                      loss=tf.keras.losses.SparseCategoricalCrossentropy(ignore_class=0),
                                      metrics=[accuracy])
 
@@ -43,9 +56,46 @@ class EncDec:
                                       show_trainable=True,
                                       show_layer_names=True)
 
-    def get_brain_encoder(self, inputs):
+        self.noise_to_ints = tf.keras.models.Model(self.de.input_body, self.de.body(self.noise(self.de.input_body)),
+                                                   name='noise_ints')
+        self.noise_to_ints.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001, epsilon=1e-9),
+                                   loss=tf.keras.losses.SparseCategoricalCrossentropy(ignore_class=0),
+                                   metrics=[accuracy])
+        if plot:
+            tf.keras.utils.plot_model(self.noise_to_ints,
+                                      to_file='img/img_noise-dec-model.png',
+                                      show_layer_activations=True,
+                                      expand_nested=True,
+                                      show_shapes=True,
+                                      show_dtype=True,
+                                      show_trainable=True,
+                                      show_layer_names=True)
+
+        self.enc_out = tf.keras.layers.Input(shape=(1, self.PACK_SIZE,), dtype='float32')
+        self.enc_noise = self.get_noise(self.enc_out, name='noise')
+        self.ints_to_noise = tf.keras.models.Model(self.en.input_body, self.enc_noise(self.en.body(self.en.input_body)),
+                                                   name='ints_noise')
+        self.ints_to_noise.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=0.00001, epsilon=1e-9),
+                                   loss=tf.keras.losses.mean_absolute_error,
+                                   metrics=[tf.keras.metrics.BinaryAccuracy(threshold=0.05)])
+        if plot:
+            tf.keras.utils.plot_model(self.ints_to_noise,
+                                      to_file='img/img_enc-noise-model.png',
+                                      show_layer_activations=True,
+                                      expand_nested=True,
+                                      show_shapes=True,
+                                      show_dtype=True,
+                                      show_trainable=True,
+                                      show_layer_names=True)
+
+    def get_string_brain_encoder(self, inputs: tf.Tensor):
+        layer = [self.en.head_body(inputs[:, i]) for i in range(self.CONTEXT_SIZE)]
+        layer = tf.keras.layers.Concatenate(-2)(layer)
+        return layer
+
+    def get_int_brain_encoder(self, inputs: tf.Tensor):
         layer = [self.en.body(inputs[:, i, :]) for i in range(self.CONTEXT_SIZE)]
-        layer = tf.keras.layers.Concatenate()(layer)
+        layer = tf.keras.layers.Concatenate(-2)(layer)
         return layer
 
     def get_noise(self, inputs, name):
