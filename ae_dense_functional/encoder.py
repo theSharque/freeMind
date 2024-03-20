@@ -1,11 +1,11 @@
 import tensorflow as tf
 import dictionary
+from smart_dense import SmartDense
 
 
 class Encoder:
-    def __init__(self, word_size, pack_size, brain_size, trainable=True, plot=True):
+    def __init__(self, word_size, brain_size, trainable=True, plot=True):
         self.word_size = word_size
-        self.pack_size = pack_size
         self.brain_size = brain_size
         self.trainable = trainable
         self.plot = plot
@@ -23,10 +23,9 @@ class Encoder:
                                         outputs=self.body(self.head(self.input_head)),
                                         trainable=trainable, name="head_body")
 
-        self.head_body.compile()
-
-        self.text2ints = tf.keras.models.Model(self.input_head, self.head(self.input_head), name='text2ints')
-        self.text2pack = tf.keras.models.Model(self.input_head, self.body(self.head(self.input_head)), name='text2pack')
+        self.text2ints = tf.keras.models.Model(inputs=self.input_head,
+                                               outputs=self.head(self.input_head),
+                                               name='text2ints')
 
     def get_head(self, inputs):
         layer = tf.keras.layers.Reshape(target_shape=(1,))(inputs)
@@ -55,17 +54,17 @@ class Encoder:
         layer = tf.one_hot(layer, self.vocab_len)
 
         layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('tanh')(layer)
+        layer = tf.keras.layers.Activation('sigmoid')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
         layer = tf.keras.layers.Flatten()(layer)
 
         layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('tanh')(layer)
+        layer = tf.keras.layers.Activation('sigmoid')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
-        layer = tf.keras.layers.Dense(self.pack_size)(layer)
-        layer = tf.keras.layers.Reshape((1, self.pack_size))(layer)
+        layer = tf.keras.layers.Dense(self.brain_size)(layer)
+        layer = tf.keras.layers.Reshape((1, self.brain_size))(layer)
         body = tf.keras.Model(inputs=inputs, outputs=layer, trainable=self.trainable, name='en_body')
 
         if self.plot:

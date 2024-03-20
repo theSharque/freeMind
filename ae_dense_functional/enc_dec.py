@@ -7,15 +7,15 @@ from context_brain import ContextBrain
 class EncDec:
     def __init__(self, tr_en=True, tr_de=True, tr_br=True, plot=True):
         self.WORD_SIZE = 24
-        self.ENC_SIZE = 512
-        self.DEC_SIZE = 512
+        self.ENC_SIZE = 128
+        self.DEC_SIZE = 256
         self.PACK_SIZE = 512
-        self.CONTEXT_SIZE = 6
+        self.CONTEXT_SIZE = 16
         self.plot = plot
 
-        self.en: Encoder = Encoder(self.WORD_SIZE, self.PACK_SIZE, self.ENC_SIZE, tr_en, plot)
-        self.de: Decoder = Decoder(self.WORD_SIZE, self.DEC_SIZE, self.DEC_SIZE, tr_de, plot)
-        self.br = ContextBrain(self.CONTEXT_SIZE, self.PACK_SIZE, self.DEC_SIZE, tr_br, plot)
+        self.en: Encoder = Encoder(self.WORD_SIZE, self.ENC_SIZE, tr_en, plot)
+        self.de: Decoder = Decoder(self.WORD_SIZE, self.DEC_SIZE, tr_de, plot)
+        self.br = ContextBrain(self.CONTEXT_SIZE, self.PACK_SIZE, self.ENC_SIZE, self.DEC_SIZE, tr_br, plot)
 
         self.noise = self.get_noise(self.de.input_body, name='noise')
 
@@ -35,7 +35,7 @@ class EncDec:
 
         self.context_input = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE, self.WORD_SIZE,), dtype='int32')
 
-        self.input_big_body = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE, self.PACK_SIZE,), dtype='float32')
+        self.input_big_body = tf.keras.layers.Input(shape=(self.CONTEXT_SIZE, self.ENC_SIZE,), dtype='float32')
         self.big_noise = self.get_noise(self.input_big_body, name='big_noise')
 
         self.ints_brain_ints = tf.keras.models.Model(self.context_input, self.de.body(
@@ -99,11 +99,7 @@ class EncDec:
         return layer
 
     def get_noise(self, inputs, name):
-        layer = inputs
-
-        layer = tf.keras.layers.GaussianNoise(0.01)(layer)
-        layer = tf.keras.layers.Dropout(0.01)(layer)
-
+        layer = tf.keras.layers.GaussianNoise(0.03)(inputs)
         model = tf.keras.Model(inputs=inputs, outputs=layer, trainable=True, name=name)
 
         if self.plot:

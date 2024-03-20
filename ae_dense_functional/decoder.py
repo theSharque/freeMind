@@ -3,9 +3,8 @@ import dictionary
 
 
 class Decoder:
-    def __init__(self, word_size, pack_size, brain_size, trainable, plot=True):
+    def __init__(self, word_size, brain_size, trainable, plot=True):
         self.word_size = word_size
-        self.pack_size = pack_size
         self.brain_size = brain_size
         self.trainable = trainable
         self.plot = plot
@@ -13,7 +12,7 @@ class Decoder:
         self.vocab = dictionary.get_vocabulary()
         self.vocab_len = len(self.vocab) + 2
 
-        self.input_body = tf.keras.layers.Input(shape=(self.pack_size,), dtype='float32')
+        self.input_body = tf.keras.layers.Input(shape=(self.brain_size,), dtype='float32')
         self.input_tail = tf.keras.layers.Input(shape=(self.word_size, self.vocab_len,), dtype='float32')
         self.input_tail_short = tf.keras.layers.Input(shape=(self.word_size,), dtype='float32')
 
@@ -35,11 +34,11 @@ class Decoder:
         layer = inputs
 
         layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('tanh')(layer)
+        layer = tf.keras.layers.Activation('sigmoid')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
         layer = tf.keras.layers.Dense(self.vocab_len * self.word_size)(layer)
-        layer = tf.keras.layers.Activation('tanh')(layer)
+        layer = tf.keras.layers.Activation('sigmoid')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
         layer = tf.keras.layers.Reshape((self.word_size, self.vocab_len))(layer)
