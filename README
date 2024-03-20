@@ -5,3 +5,30 @@ Brain - check some context (bucket of vectors) - context_size, produce vector (p
 Decoder - decode final vector into word
 
 data - harry.txt is just all "harry potter" text but we can't upload this to GitHub so use your own texts
+
+Pros:
+Extra fast learning rate.
+Input -> 16 words (24 letters maximum)
+Output -> 1 next word in text (predicted)
+
+100K words learned for 251s per Epoch.
+20 Epoch approx 97% learned.
+
+Example train in Core i7 NO GPU!!! (Actually on GPU it slower)
+
+Train size 100000
+Epoch 1/10
+1547/1547 [==============================] - 260s 163ms/step - loss: 2.4292 - accuracy: 0.3676 - val_loss: 3.2527 - val_accuracy: 0.1677
+Epoch 2/10
+1547/1547 [==============================] - 251s 162ms/step - loss: 2.0535 - accuracy: 0.4561 - val_loss: 3.3888 - val_accuracy: 0.1595
+Epoch 3/10
+1547/1547 [==============================] - 251s 162ms/step - loss: 1.8398 - accuracy: 0.5072 - val_loss: 3.4747 - val_accuracy: 0.1572
+Epoch 4/10
+1547/1547 [==============================] - 260s 168ms/step - loss: 1.6844 - accuracy: 0.5428 - val_loss: 3.5999 - val_accuracy: 0.1551
+Epoch 5/10
+1547/1547 [==============================] - 282s 182ms/step - loss: 1.5616 - accuracy: 0.5722 - val_loss: 3.6766 - val_accuracy: 0.1481
+Epoch 6/10
+1547/1547 [==============================] - 266s 172ms/step - loss: 1.4631 - accuracy: 0.5964 - val_loss: 3.7688 - val_accuracy: 0.1446
+
+Internal structure:
+(Word -> vector) * 16 -> Brain -> Decoder
