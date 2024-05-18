@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 import dictionary
 import os
 
@@ -33,7 +32,8 @@ def train(gan: GAN):
         d_loss = []
         enough = False
         while not enough:
-            fake = gan.generator_model.predict_on_batch(np.array(in_data))
+            rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
+            fake = gan.generator_model.predict_on_batch([np.array(in_data), rand_data])
             x = [np.concatenate([real, fake]), np.concatenate([np.array(in_data), np.array(in_data)])]
             y = np.concatenate([np.ones((train_len, 1)), np.zeros((train_len, 1))])
 
@@ -50,7 +50,8 @@ def train(gan: GAN):
         g_loss = []
         enough = False
         while not enough:
-            x = np.array(in_data)
+            rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
+            x = [np.array(in_data), rand_data]
             y = np.ones((train_len, 1))
 
             history = gan.combined.fit(x, y, batch_size=64, epochs=1)

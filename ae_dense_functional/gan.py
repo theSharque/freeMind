@@ -10,11 +10,11 @@ class GAN:
 
         self.DESC_SIZE = 1024
 
-        self.generator_body = self.encdec.br.body(self.encdec.big_noise(self.encdec.get_int_brain_encoder(
-            self.encdec.context_input)))
+        self.generator_body = self.encdec.br.body([self.encdec.big_noise(self.encdec.get_int_brain_encoder(
+            self.encdec.context_input)), self.encdec.br.random_input])
 
         self.generator_model = tf.keras.Model(
-            inputs=self.encdec.context_input,
+            inputs=[self.encdec.context_input, self.encdec.br.random_input],
             outputs=self.generator_body,
             trainable=True,
             name='generator')
@@ -55,9 +55,10 @@ class GAN:
 
         self.encdec.en.body.trainable = True
         self.discriminator_model.trainable = False
-        self.combined = tf.keras.Model(inputs=self.encdec.context_input,
+        self.combined = tf.keras.Model(inputs=[self.encdec.context_input, self.encdec.br.random_input],
                                        outputs=self.discriminator_model([
-                                           self.generator_model(self.encdec.context_input),
+                                           self.generator_model(
+                                               [self.encdec.context_input, self.encdec.br.random_input]),
                                            self.encdec.context_input
                                        ]),
                                        name='combined')
