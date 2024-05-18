@@ -1,6 +1,6 @@
 import tensorflow as tf
 import dictionary
-from smart_dense import SmartDense
+from smart_dense_l2 import SmartDenseL2
 
 
 class Encoder:
@@ -50,20 +50,18 @@ class Encoder:
         return head
 
     def get_body(self, inputs):
-        layer = inputs
-        layer = tf.one_hot(layer, self.vocab_len)
-
+        layer = tf.one_hot(inputs, self.vocab_len)
         layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('sigmoid')(layer)
+        layer = tf.keras.layers.Activation('tanh')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
         layer = tf.keras.layers.Flatten()(layer)
 
-        layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('sigmoid')(layer)
+        layer = SmartDenseL2(self.brain_size)(layer)
+        layer = tf.keras.layers.Activation('tanh')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
-        layer = tf.keras.layers.Dense(self.brain_size)(layer)
+        layer = SmartDenseL2(self.brain_size)(layer)
         layer = tf.keras.layers.Reshape((1, self.brain_size))(layer)
         body = tf.keras.Model(inputs=inputs, outputs=layer, trainable=self.trainable, name='en_body')
 

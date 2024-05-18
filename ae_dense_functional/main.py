@@ -1,7 +1,7 @@
 import numpy as np
 import tensorflow as tf
 
-from ae_dense_functional.enc_dec import EncDec
+from enc_dec import EncDec
 
 
 def test_model():

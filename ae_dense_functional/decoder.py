@@ -1,5 +1,6 @@
 import tensorflow as tf
 import dictionary
+from smart_dense_l2 import SmartDenseL2
 
 
 class Decoder:
@@ -33,12 +34,12 @@ class Decoder:
     def get_body(self, inputs):
         layer = inputs
 
-        layer = tf.keras.layers.Dense(self.brain_size)(layer)
-        layer = tf.keras.layers.Activation('sigmoid')(layer)
+        layer = SmartDenseL2(self.brain_size)(layer)
+        layer = tf.keras.layers.Activation('tanh')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
-        layer = tf.keras.layers.Dense(self.vocab_len * self.word_size)(layer)
-        layer = tf.keras.layers.Activation('sigmoid')(layer)
+        layer = SmartDenseL2(self.vocab_len * self.word_size)(layer)
+        layer = tf.keras.layers.Activation('tanh')(layer)
         layer = tf.keras.layers.BatchNormalization()(layer)
 
         layer = tf.keras.layers.Reshape((self.word_size, self.vocab_len))(layer)
