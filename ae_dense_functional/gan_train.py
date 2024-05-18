@@ -31,8 +31,8 @@ def train(gan: GAN):
 
         d_loss = []
         enough = False
+        rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
         while not enough:
-            rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
             fake = gan.generator_model.predict_on_batch([np.array(in_data), rand_data])
             x = [np.concatenate([real, fake]), np.concatenate([np.array(in_data), np.array(in_data)])]
             y = np.concatenate([np.ones((train_len, 1)), np.zeros((train_len, 1))])
@@ -49,8 +49,8 @@ def train(gan: GAN):
         print("Generator")
         g_loss = []
         enough = False
+        rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
         while not enough:
-            rand_data = np.random.rand(len(in_data), gan.encdec.br.RANDOM_SIZE)
             x = [np.array(in_data), rand_data]
             y = np.ones((train_len, 1))
 
@@ -58,7 +58,8 @@ def train(gan: GAN):
             g_loss = [history.history['loss'][-1], history.history['accuracy'][-1]]
             enough = history.history['accuracy'][-1] >= 0.95
             print(gan.encdec.de.shorts2text(real_out[:test_len]).numpy().decode('utf-8'))
-            print(gan.encdec.de.pack2text(gan.generator_model(np.array(in_data[:test_len]))).numpy().decode('utf-8'))
+            print(gan.encdec.de.pack2text(
+                gan.generator_model([np.array(in_data[:test_len]), rand_data[:test_len]])).numpy().decode('utf-8'))
 
         gan.encdec.en.body.save_weights('top_enc.hdf5', overwrite=True)
         gan.encdec.de.body.save_weights('top_dec.hdf5', overwrite=True)
@@ -70,7 +71,8 @@ def train(gan: GAN):
         print("%d [D loss: %f, acc.: %.2f%%] [G loss: %f, acc.: %.2f%%]" % (
             epoch, d_loss[0], 100 * d_loss[1], g_loss[0], 100 * d_loss[1]))
         print(gan.encdec.de.shorts2text(real_out[:test_len]).numpy().decode('utf-8'))
-        print(gan.encdec.de.pack2text(gan.generator_model(np.array(in_data[:test_len]))).numpy().decode('utf-8'))
+        print(gan.encdec.de.pack2text(
+            gan.generator_model([np.array(in_data[:test_len]), rand_data[:test_len]])).numpy().decode('utf-8'))
 
 
 if __name__ == '__main__':
